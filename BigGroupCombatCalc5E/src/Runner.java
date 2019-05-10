@@ -1,15 +1,20 @@
 
 public class Runner {
 
-	public static void main(String[] args) {
-		Creature[][] grid = new Creature[20][20];
+	private Terrain[][] grid;
+	
+	public void main(String[] args) {
 		grid = populateGridTest(grid);
 
 	}
 
-	private static Creature[][] populateGridTest(Creature[][] grid) {
+	private Terrain[][] populateGridTest(Terrain[][] grid) {
 		
 		return null;
+	}
+	
+	public Terrain[][] getGrid(){
+		return grid;
 	}
 
 }
