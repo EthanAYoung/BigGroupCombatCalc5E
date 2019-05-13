@@ -18,6 +18,10 @@ public class Path {
 		return steps;
 	}
 	
+	public void addHead(int row, int col, int moveReq){
+		steps.add(0, new int[]{row, col});
+	}
+	
 	public int getLength(){
 		return length;
 	}

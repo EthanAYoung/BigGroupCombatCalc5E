@@ -2,7 +2,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Random;
 
-public class Creature implements Comparator<Creature>{
+public class Creature implements Comparable<Creature>{
 	
 	protected int hp;
 	protected int ac;
@@ -40,11 +40,20 @@ public class Creature implements Comparator<Creature>{
 	protected int colPos;
 	protected boolean faction;
 	protected Path myPath;
-	
-	protected dataPointer data;
+	protected Terrain[][] board;
 	
 	public Creature(){
+		sneaking = false;
+		
+		opponent = null;
+		prone = false;
+		
 		down = false;
+		deathSavesPos = 0;
+		deathSavesNeg = 0;
+		stable = false;
+		dead = false;
+		
 	}
 	
 	public Creature(int h, int a, int sp, int str, int dex, int con, int i, int wis, int cha){
@@ -89,52 +98,77 @@ public class Creature implements Comparator<Creature>{
 		int colL = colPos - 1;
 		int colR = colPos + 1;
 		boolean contU = rowU >= 0;
-		boolean contD = rowD < data.getGrid().length;
+		boolean contD = rowD < board.length;
 		boolean contL = colL >= 0;
-		boolean contR = colR < data.getGrid()[0].length;
+		boolean contR = colR < board[0].length;
 		
 		while (contU || contD || contL || contR){
-			if (contU){
-				if (checkRow(rowU, colL, colR)){
-					return true;
-				}
+			if (checkDir(contU, contL, contR, rowU, colL, colR, board[0].length, true)){
+				return true;
 			}
-			if (contD){
-				if (checkRow(rowD, colL, colR)){
-					return true;
-				}
+			if (checkDir(contD, contL, contR, rowD, colL, colR, board[0].length, true)){
+				return true;
 			}
-			if (contL){
-				if (checkCol(colL, rowU, rowD)){
-					return true;
-				}
+			if (checkDir(contL, contU, contD, colL, rowU, rowD, board.length, false)){
+				return true;
 			}
-			if (contR){
-				if (checkCol(colR, rowU, rowD)){
-					return true;
-				}
+			if (checkDir(contR, contU, contD, colR, rowU, rowD, board.length, false)){
+				return true;
 			}
+			
+			rowU--;
+			rowD++;
+			colL--;
+			colR++;
+			contU = rowU >= 0;
+			contD = rowD < board.length;
+			contL = colL >= 0;
+			contR = colR < board[0].length;
 		}
 		
 		return false;
 	}
 	
+	private boolean checkDir(Boolean cont, Boolean lowCont, Boolean highCont, int base, int low, int high, int boundary, boolean isRow){
+		if (cont){
+			if (!lowCont){
+				low = 0;
+			}
+			if (!highCont){
+				high = boundary - 1;
+				//System.out.println(boundary);
+			}
+			if (isRow){
+				if (checkRow(base, low, high)){
+					return true;
+				}
+			}
+			else {
+				if (checkCol(base, low, high)){
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
 	private boolean checkRow(int row, int colL, int colR) {
-		int mid = (colR - colL) / 2 + colL;
-		Creature curr = data.getGrid()[row][mid].occupant;
+		int mid = colPos;
+		Creature curr = board[row][mid].occupant;
 		if (curr != null && faction != curr.getFaction()){
 			opponent = curr;
 			return true;
 		}
 		for (int col = mid - 1; col >= colL; col--){
-			curr = data.getGrid()[row][col].occupant;
+			curr = board[row][col].occupant;
 			if(curr != null && faction != curr.getFaction()){
 				opponent = curr;
 				return true;
 			}
 		}
 		for (int col = mid + 1; col <= colR; col++){
-			curr = data.getGrid()[row][col].occupant;
+			//System.out.println("Row = " + row + " Col = " + col);
+			curr = board[row][col].occupant;
 			if(curr != null && faction != curr.getFaction()){
 				opponent = curr;
 				return true;
@@ -147,21 +181,22 @@ public class Creature implements Comparator<Creature>{
 	
 	//optimize the corners
 	private boolean checkCol(int col, int rowU, int rowD) {
-		int mid = (rowD - rowU) / 2 + rowU;
-		Creature curr = data.getGrid()[mid][col].occupant;
+		int mid = rowPos;
+		Creature curr = board[mid][col].occupant;
 		if (curr != null && faction != curr.getFaction()){
 			opponent = curr;
 			return true;
 		}
 		for (int row = mid - 1; row >= rowU; row--){
-			curr = data.getGrid()[row][col].occupant;
+			curr = board[row][col].occupant;
 			if(curr != null && faction != curr.getFaction()){
 				opponent = curr;
 				return true;
 			}
 		}
 		for (int row = mid + 1; row <= rowD; row++){
-			curr = data.getGrid()[row][col].occupant;
+			//System.out.println("Row = " + row + " Col = " + col);
+			curr = board[row][col].occupant;
 			if(curr != null && faction != curr.getFaction()){
 				opponent = curr;
 				return true;
@@ -181,7 +216,7 @@ public class Creature implements Comparator<Creature>{
 			return true;
 		}
 		int[] target = findOpenSpaceInRange();
-		myPath = getPathTo(rowPos, colPos, target[0], target[1], new Path());
+		myPath = getPathTo(rowPos, colPos, target[0], target[1], new Path(), 0);
 		if (walkPath()){
 			return true;
 		}
@@ -200,28 +235,28 @@ public class Creature implements Comparator<Creature>{
 		int squareRange = range/5;
 		ArrayList<int[]> openSpaces = new ArrayList<int[]>();
 		int left = putOnGridLower(opponent.getColPos() - squareRange);
-		int right = putOnGridHigher(opponent.getColPos() + squareRange, data.getGrid()[0].length);
+		int right = putOnGridHigher(opponent.getColPos() + squareRange, board[0].length);
 		int up = putOnGridLower(opponent.getRowPos() - squareRange);
-		int down = putOnGridHigher(opponent.getRowPos() + squareRange, data.getGrid().length);
+		int down = putOnGridHigher(opponent.getRowPos() + squareRange, board.length);
 		
 		for(int col = left; col <= right; col++){
-			if(data.getGrid()[up][col].occupant == null){
+			if(board[up][col].occupant == null){
 				openSpaces.add(new int[]{up, col});
 			}
 		}
 		for(int col = left; col <= right; col++){
-			if(data.getGrid()[down][col].occupant == null){
+			if(board[down][col].occupant == null){
 				openSpaces.add(new int[]{down, col});
 			}
 		}
 		
 		for(int row = up + 1; row < down; row++){
-			if(data.getGrid()[row][left].occupant == null){
+			if(board[row][left].occupant == null){
 				openSpaces.add(new int[]{row, left});
 			}
 		}
 		for(int row = up + 1; row < down; row++){
-			if(data.getGrid()[row][right].occupant == null){
+			if(board[row][right].occupant == null){
 				openSpaces.add(new int[]{row, right});
 			}
 		}
@@ -258,57 +293,49 @@ public class Creature implements Comparator<Creature>{
 		return i;
 	}
 	
-	private Path getPathTo(int myRow, int myCol, int endRow, int endCol, Path path){
+	private Path getPathTo(int myRow, int myCol, int endRow, int endCol, Path path, int totalLength){
+		System.out.println("********************");
 		if (myRow == endRow && myCol == endCol){
 			return path;
 		}
+		if (totalLength > movementLeft){
+			return path;
+		}
 		
-		ArrayList<Integer> rowPosibs = new ArrayList<Integer>();
-		ArrayList<Integer> colPosibs = new ArrayList<Integer>();
+		int rowLow = myRow;
+		int rowHigh = myRow;
+		int colLow = myCol;
+		int colHigh = myCol;
 		if (myRow < endRow){
-			rowPosibs.add(myRow + 1);
-			rowPosibs.add(myRow);
+			rowHigh = myRow + 1;
 		}
 		if (myRow > endRow){
-			rowPosibs.add(myRow - 1);
-			rowPosibs.add(myRow);
-		}
-		if (myRow == endRow){
-			rowPosibs.add(myRow);
+			rowLow = myRow - 1;
 		}
 		
 		if (myCol < endCol){
-			colPosibs.add(myCol + 1);
-			colPosibs.add(myCol);
+			colHigh = myCol + 1;
 		}
 		if (myCol > endCol){
-			colPosibs.add(myCol - 1);
-			colPosibs.add(myCol);
-		}
-		if (myCol == endCol){
-			colPosibs.add(myCol);
+			colLow = myCol - 1;
 		}
 		
 		ArrayList<Path> paths = new ArrayList<Path>();
 		Path temp;
-		int currRow;
-		int currCol;
-		for (int row = 0; row < rowPosibs.size(); row++){
-			currRow = rowPosibs.get(row);
-			for (int col = 0; col < colPosibs.size(); col++){
-				currCol = colPosibs.get(col);
-				if (currRow == 0 && currCol == 0){
-					continue;
+		for (int currRow = rowLow; currRow < rowHigh; currRow++){
+			for (int currCol = colLow; currCol < colHigh; currCol++){
+				if (currRow != myRow || currCol != myCol){
+					temp = new Path();
+					temp.addStep(new int[]{currRow, currCol});
+					if (board[currRow][currCol].occupant == null){
+						temp.increaseLength(board[currRow][currCol].getMoveReq());
+					}
+					else {
+						temp.increaseLength(board[currRow][currCol].getMoveReq() + 5);
+					}
+					System.out.println("Row = " + currRow + " Col = " + currCol);
+					paths.add(getPathTo(currRow, currCol, endRow, endCol, temp, totalLength + temp.getLength()));
 				}
-				temp = path.copy();
-				temp.addStep(new int[]{currRow, currCol});
-				if (data.getGrid()[currRow][currCol].occupant == null){
-					temp.increaseLength(data.getGrid()[currRow][currCol].getMoveReq());
-				}
-				else {
-					temp.increaseLength(data.getGrid()[currRow][currCol].getMoveReq() + 5);
-				}
-				paths.add(getPathTo(currRow, currCol, endRow, endCol, temp));
 			}
 		}
 		
@@ -335,10 +362,10 @@ public class Creature implements Comparator<Creature>{
 		for (int i = 0; i < myPath.getSteps().size(); i++){
 			currRow = myPath.getSteps().get(i)[0];
 			currCol = myPath.getSteps().get(i)[1];
-			curr = data.getGrid()[currRow][currCol];
+			curr = board[currRow][currCol];
 			if (curr.occupant == null){
 				if (movementLeft >= curr.getMoveReq() + moveReqPile){
-					data.getGrid()[rowPos][colPos].occupant = null;
+					board[rowPos][colPos].occupant = null;
 					rowPos = currRow;
 					colPos = currCol;
 					curr.occupant = this;
@@ -444,8 +471,8 @@ public class Creature implements Comparator<Creature>{
 	
 	private void stayDown(){
 		stable = true;
-		data.getGrid()[rowPos][colPos].occupant = null;
-		data.getGrid()[rowPos][colPos].addBody(this);
+		board[rowPos][colPos].occupant = null;
+		board[rowPos][colPos].addBody(this);
 	}
 	
 	private void riseUp(){
@@ -460,6 +487,10 @@ public class Creature implements Comparator<Creature>{
 		return false;
 	}
 	
+	public boolean isDead(){
+		return dead;
+	}
+	
 	public void setFaction(boolean fac){
 		faction = fac;
 	}
@@ -469,11 +500,20 @@ public class Creature implements Comparator<Creature>{
 		return initiative;
 	}
 	
+	public void setBoard(Terrain[][] g){
+		board = g;
+	}
 	
-	public int compare(Creature a, Creature b) 
-    { 
-        return a.initiative - b.initiative; 
-    }
+	public void setPos(int r, int c){
+		rowPos = r;
+		colPos = c;
+	}
+
+	@Override
+	public int compareTo(Creature arg0) {
+		// TODO Auto-generated method stub
+		return initiative - arg0.initiative;
+	}
 	
 
 }
