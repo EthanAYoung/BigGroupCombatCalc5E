@@ -3,45 +3,47 @@ import java.util.Random;
 
 public class Creature {
 	
-	private int hp;
-	private int ac;
-	private int speed;
-	private int strength;
-	private int dexterity;
-	private int constitution;
-	private int intelligence;
-	private int wisdom;
-	private int charisma;
-	private int pasPerception;
-	private int proficiency;
-	private int tempHp;
+	protected int hp;
+	protected int ac;
+	protected int speed;
+	protected int strength;
+	protected int dexterity;
+	protected int constitution;
+	protected int intelligence;
+	protected int wisdom;
+	protected int charisma;
+	protected int pasPerception;
+	protected int proficiency;
+	protected int tempHp;
+	protected int hpMax;
+	protected int initiative;
 	
-	private int movementLeft;
-	private boolean hasReaction;
+	protected int movementLeft;
+	protected boolean hasReaction;
 	
-	private boolean sneaking;
-	private int stealthScore;
+	protected boolean sneaking;
+	protected int stealthScore;
 	
-	private int damageDie;
-	private int range;
-	private Creature opponent;
-	private boolean prone;
+	protected int damageDie;
+	protected int range;
+	protected Creature opponent;
+	protected boolean prone;
 	
-	private boolean down;
-	private int deathSavesPos;
-	private int deathSavesNeg;
-	private boolean stable;
-	private boolean dead;
+	protected boolean down;
+	protected int deathSavesPos;
+	protected int deathSavesNeg;
+	protected boolean stable;
+	protected boolean dead;
 	
-	private int rowPos;
-	private int colPos;
-	private int faction;
-	private Path myPath;
+	protected int rowPos;
+	protected int colPos;
+	protected int faction;
+	protected Path myPath;
 	
-	private dataPointer data;
+	protected dataPointer data;
 	
 	public Creature(){
-		
+		down = false;
 	}
 	
 	public Creature(int h, int a, int sp, int str, int dex, int con, int i, int wis, int cha){
@@ -58,8 +60,8 @@ public class Creature {
 			makeDeathSavingThrow();
 			if (hp > 0){
 				stayDown();
-				return;
-			}			
+			}
+			return;			
 		}
 		if (isProne()){
 			standUp();
@@ -448,6 +450,15 @@ public class Creature {
 	private void riseUp(){
 		standUp();
 		down = false;
+	}
+	
+	public void setFaction(int fac){
+		faction = fac;
+	}
+	
+	public int rollInitiative(){
+		initiative = rollDie(20) + dexterity;
+		return initiative;
 	}
 	
 
