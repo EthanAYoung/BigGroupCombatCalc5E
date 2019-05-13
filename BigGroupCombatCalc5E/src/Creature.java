@@ -1,7 +1,8 @@
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Random;
 
-public class Creature {
+public class Creature implements Comparator<Creature>{
 	
 	protected int hp;
 	protected int ac;
@@ -37,7 +38,7 @@ public class Creature {
 	
 	protected int rowPos;
 	protected int colPos;
-	protected int faction;
+	protected boolean faction;
 	protected Path myPath;
 	
 	protected dataPointer data;
@@ -51,7 +52,7 @@ public class Creature {
 	}
 	
 	public void takeTurn(){
-		if (dead || stable){
+		if (isDefeated()){
 			return;
 		}
 		hasReaction = true;
@@ -171,7 +172,7 @@ public class Creature {
 		
 	}
 
-	public int getFaction() {
+	public boolean getFaction() {
 		return faction;
 	}
 
@@ -409,7 +410,7 @@ public class Creature {
 		}
 	}
 	
-	public void takeDamage(int damage){
+	private void takeDamage(int damage){
 		hp -= damage;
 		if (hp < 0){
 			dropProne();
@@ -452,7 +453,14 @@ public class Creature {
 		down = false;
 	}
 	
-	public void setFaction(int fac){
+	public boolean isDefeated(){
+		if (dead || stable){
+			return true;
+		}
+		return false;
+	}
+	
+	public void setFaction(boolean fac){
 		faction = fac;
 	}
 	
@@ -460,6 +468,12 @@ public class Creature {
 		initiative = rollDie(20) + dexterity;
 		return initiative;
 	}
+	
+	
+	public int compare(Creature a, Creature b) 
+    { 
+        return a.initiative - b.initiative; 
+    }
 	
 
 }
