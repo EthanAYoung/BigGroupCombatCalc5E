@@ -34,4 +34,8 @@ public class Path {
 		return copy;
 	}
 
+	public void setStart(int i) {
+		steps = (ArrayList<int[]>) steps.subList(i, steps.size());
+	}
+
 }

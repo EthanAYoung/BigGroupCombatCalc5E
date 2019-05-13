@@ -13,8 +13,11 @@ public class Creature {
 	private int wisdom;
 	private int charisma;
 	private int pasPerception;
+	private int proficiency;
+	private int tempHp;
 	
 	private int movementLeft;
+	private boolean hasReaction;
 	
 	private boolean sneaking;
 	private int stealthScore;
@@ -49,16 +52,19 @@ public class Creature {
 		if (dead || stable){
 			return;
 		}
+		hasReaction = true;
+		movementLeft = speed;
 		if (isDown()){
 			makeDeathSavingThrow();
 			if (hp > 0){
 				stayDown();
+				return;
 			}			
 		}
 		if (isProne()){
 			standUp();
 		}
-		if (opponent != null && !opponent.isDown()){
+		if (opponent != null && !opponent.isDown() && opponentIsInRange()){
 			makeAttack();
 		}
 		else {
@@ -69,7 +75,9 @@ public class Creature {
 	}
 
 	private void makeAttack(){
-		
+		int attackRoll = rollDie(20) + strength + proficiency;
+		int damageRoll = rollDie(damageDie) + strength;
+		opponent.getAttacked(attackRoll, damageRoll);
 	}
 
 	private boolean findOpponent(){
@@ -166,13 +174,22 @@ public class Creature {
 	}
 
 	private boolean moveToOpponent() {
-		int squareRange = range/5;
-		if(Math.abs(rowPos - opponent.getRowPos()) < squareRange && Math.abs(colPos - opponent.getColPos()) < squareRange){
+		if(opponentIsInRange()){
 			return true;
 		}
 		int[] target = findOpenSpaceInRange();
 		myPath = getPathTo(rowPos, colPos, target[0], target[1], new Path());
-		walkPath();
+		if (walkPath()){
+			return true;
+		}
+		return false;
+	}
+	
+	private boolean opponentIsInRange() {
+		int squareRange = range/5;
+		if(Math.abs(rowPos - opponent.getRowPos()) < squareRange && Math.abs(colPos - opponent.getColPos()) < squareRange){
+			return true;
+		}
 		return false;
 	}
 	
@@ -306,21 +323,36 @@ public class Creature {
 		return paths.get(shortestPathInd);
 	}
 	
-	private void walkPath(){
+	private boolean walkPath(){
 		int currRow;
 		int currCol;
 		Terrain curr;
+		int moveReqPile = 0;
+		int lastSuccInd = -1;
 		for (int i = 0; i < myPath.getSteps().size(); i++){
 			currRow = myPath.getSteps().get(i)[0];
 			currCol = myPath.getSteps().get(i)[1];
 			curr = data.getGrid()[currRow][currCol];
-			if (curr.occupant == null && movementLeft >= curr.getMoveReq()){
-				rowPos = currRow;
-				colPos = currCol;
-				curr.occupant = this;
+			if (curr.occupant == null){
+				if (movementLeft >= curr.getMoveReq() + moveReqPile){
+					data.getGrid()[rowPos][colPos].occupant = null;
+					rowPos = currRow;
+					colPos = currCol;
+					curr.occupant = this;
+					lastSuccInd = i;
+					movementLeft -= (curr.getMoveReq() + moveReqPile);
+					moveReqPile = 0;
+				}
+				else {
+					myPath.setStart(lastSuccInd + 1);
+					return false;
+				}
 			}
-			if (curr.occupant != null)
+			if (curr.occupant != null){
+				moveReqPile += 5 + curr.getMoveReq();
+			}
 		}
+		return true;
 	}
 
 	private int getRowPos() {
@@ -331,9 +363,9 @@ public class Creature {
 		return colPos;
 	}
 
-	private int rollD20(){
+	private int rollDie(int die){
 		Random rand = new Random();
-		return rand.nextInt(20) + 1;
+		return rand.nextInt(die) + 1;
 	}
 	
 	public boolean isDown(){
@@ -341,7 +373,7 @@ public class Creature {
 	}
 
 	private void makeDeathSavingThrow(){
-		int roll = rollD20();
+		int roll = rollDie(20);
 		if (roll == 20){
 			deathSavesPos = 0;
 			deathSavesNeg = 0;
@@ -367,6 +399,12 @@ public class Creature {
 			deathSavesNeg = 0;
 		}
 		
+	}
+
+	private void getAttacked(int attackRoll, int damageRoll) {
+		if (attackRoll > ac){
+			takeDamage(damageRoll);
+		}
 	}
 	
 	public void takeDamage(int damage){
@@ -402,7 +440,9 @@ public class Creature {
 	}
 	
 	private void stayDown(){
-		down = true;
+		stable = true;
+		data.getGrid()[rowPos][colPos].occupant = null;
+		data.getGrid()[rowPos][colPos].addBody(this);
 	}
 	
 	private void riseUp(){
