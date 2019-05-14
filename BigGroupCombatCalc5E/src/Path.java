@@ -38,8 +38,12 @@ public class Path {
 		return copy;
 	}
 
-	public void setStart(int i) {
-		steps = (ArrayList<int[]>) steps.subList(i, steps.size());
+	public void setStart(int ind) {
+		ArrayList<int[]> temp = new ArrayList<int[]>();
+		for (int i = ind; i < steps.size(); i++){
+			temp.add(steps.get(i));
+		}
+		steps = temp;
 	}
 
 }

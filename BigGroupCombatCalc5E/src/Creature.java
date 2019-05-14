@@ -216,7 +216,7 @@ public class Creature implements Comparable<Creature>{
 			return true;
 		}
 		int[] target = findOpenSpaceInRange();
-		myPath = getPathTo(rowPos, colPos, target[0], target[1], new Path(), 0);
+		myPath = getPathTo(rowPos, colPos, target[0], target[1], 0);
 		if (walkPath()){
 			return true;
 		}
@@ -293,14 +293,17 @@ public class Creature implements Comparable<Creature>{
 		return i;
 	}
 	
-	private Path getPathTo(int myRow, int myCol, int endRow, int endCol, Path path, int totalLength){
-		System.out.println("********************");
+	private Path getPathTo(int myRow, int myCol, int endRow, int endCol, int totalLength){
 		if (myRow == endRow && myCol == endCol){
-			return path;
+			Path ret = new Path();
+			ret.addHead(myRow, myCol, board[myRow][myCol].getMoveReq());
+			return ret;
 		}
-		if (totalLength > movementLeft){
-			return path;
-		}
+		/*if (totalLength > movementLeft){
+			Path ret = new Path();
+			ret.addHead(myRow, myCol, board[myRow][myCol].getMoveReq());
+			return ret;
+		}*/
 		
 		int rowLow = myRow;
 		int rowHigh = myRow;
@@ -320,25 +323,21 @@ public class Creature implements Comparable<Creature>{
 			colLow = myCol - 1;
 		}
 		
+		//System.out.println("myRow = " + myRow + " myCol = " + myCol);
+		//System.out.println("endRow = " + endRow + " endCol = " + endCol);
+		
 		ArrayList<Path> paths = new ArrayList<Path>();
-		Path temp;
-		for (int currRow = rowLow; currRow < rowHigh; currRow++){
-			for (int currCol = colLow; currCol < colHigh; currCol++){
+		for (int currRow = rowLow; currRow <= rowHigh; currRow++){
+			//System.out.println(currRow);
+			//System.out.println("colLow = " + colLow + " colHigh = " + colHigh);
+			for (int currCol = colLow; currCol <= colHigh; currCol++){
+				//System.out.println("Row = " + currRow + " Col = " + currCol);
 				if (currRow != myRow || currCol != myCol){
-					temp = new Path();
-					temp.addStep(new int[]{currRow, currCol});
-					if (board[currRow][currCol].occupant == null){
-						temp.increaseLength(board[currRow][currCol].getMoveReq());
-					}
-					else {
-						temp.increaseLength(board[currRow][currCol].getMoveReq() + 5);
-					}
-					System.out.println("Row = " + currRow + " Col = " + currCol);
-					paths.add(getPathTo(currRow, currCol, endRow, endCol, temp, totalLength + temp.getLength()));
+					//System.out.println("inside");
+					paths.add(getPathTo(currRow, currCol, endRow, endCol, totalLength + board[currRow][currCol].getMoveReq()));
 				}
 			}
 		}
-		
 		int least = paths.get(0).getLength();
 		int shortestPathInd = 0;
 		int tmpLeast;
@@ -350,10 +349,13 @@ public class Creature implements Comparable<Creature>{
 			}
 		}
 		
-		return paths.get(shortestPathInd);
+		Path ret = paths.get(shortestPathInd);
+		ret.addHead(myRow, myCol, board[myRow][myCol].getMoveReq());
+		return ret;
 	}
 	
 	private boolean walkPath(){
+		myPath.setStart(1);
 		int currRow;
 		int currCol;
 		Terrain curr;
@@ -379,7 +381,7 @@ public class Creature implements Comparable<Creature>{
 				}
 			}
 			if (curr.occupant != null){
-				moveReqPile += 5 + curr.getMoveReq();
+				moveReqPile += curr.getMoveReq();
 			}
 		}
 		return true;
@@ -507,6 +509,13 @@ public class Creature implements Comparable<Creature>{
 	public void setPos(int r, int c){
 		rowPos = r;
 		colPos = c;
+	}
+	
+	public void runDiagnostic(){
+		System.out.println("Hp = " + hp);
+		System.out.println("Dead? " + dead);
+		System.out.println("Stable? " + stable);
+		System.out.println("Position = " + rowPos + ", " + colPos);
 	}
 
 	@Override

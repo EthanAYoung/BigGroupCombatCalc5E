@@ -7,6 +7,8 @@ public class Runner {
 	private static Terrain[][] grid;
 	private static int numOfFacT;
 	private static int numOfFacF;
+	private static Creature man1;
+	private static Creature man2;
 	
 	public static void main(String[] args) {
 		grid = populateGridTest();
@@ -22,9 +24,20 @@ public class Runner {
 			else {
 				order.add(curr);
 			}
+			System.out.println("**********BEGIN************");
+			System.out.println("Jorn");
+			man1.runDiagnostic();
+			System.out.println("**********************");
+			System.out.println("Bjorn");
+			man2.runDiagnostic();
+			System.out.println("**********END************");
 		}
 		
 		getCasualtyReport();
+		System.out.println("**********************");
+		man1.runDiagnostic();
+		System.out.println("**********************");
+		man2.runDiagnostic();
 
 	}
 
@@ -48,6 +61,10 @@ public class Runner {
 		modFacNum(false, 1);
 		Bjorn.setBoard(grid);
 		Bjorn.setPos(0, 10);
+		
+		man1 = Jorn;
+		man2 = Bjorn;
+		
 		return grid;
 	}
 	

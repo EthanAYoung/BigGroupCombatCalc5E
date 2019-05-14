@@ -21,7 +21,12 @@ public class Terrain {
 	}
 	
 	public int getMoveReq(){
-		return moveReq;
+		if (occupant == null){
+			return moveReq;
+		}
+		else {
+			return moveReq + 5;
+		}
 	}
 
 }
