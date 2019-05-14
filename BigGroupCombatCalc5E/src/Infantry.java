@@ -2,6 +2,7 @@
 public class Infantry extends Creature{
 	
 	public Infantry (){
+		super();
 		hp = 17;
 		ac = 14;
 		speed = 30;

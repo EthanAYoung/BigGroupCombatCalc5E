@@ -35,8 +35,10 @@ public class Runner {
 		
 		getCasualtyReport();
 		System.out.println("**********************");
+		System.out.println("Jorn");
 		man1.runDiagnostic();
 		System.out.println("**********************");
+		System.out.println("Bjorn");
 		man2.runDiagnostic();
 
 	}
@@ -118,9 +120,12 @@ public class Runner {
 		int stableFacF = 0;
 		for (int row = 0; row < grid.length; row++){
 			for (int col = 0; col < grid[0].length; col++){
+				if (grid[row][col].getBodies().size() != 0){
+					System.out.println(grid[row][col].getBodies().size());
+				}
 				for (int i = 0; i < grid[row][col].getBodies().size(); i++){
-					if(grid[row][col].getBodies().get(i).isDead()){
-						if(grid[row][col].getBodies().get(i).getFaction()){
+					if (grid[row][col].getBodies().get(i).isDead()){
+						if (grid[row][col].getBodies().get(i).getFaction()){
 							deadFacT++;
 						}
 						else {
@@ -128,7 +133,7 @@ public class Runner {
 						}
 					}
 					else {
-						if(grid[row][col].getBodies().get(i).getFaction()){
+						if (grid[row][col].getBodies().get(i).getFaction()){
 							stableFacT++;
 						}
 						else {

@@ -41,6 +41,7 @@ public class Creature implements Comparable<Creature>{
 	protected boolean faction;
 	protected Path myPath;
 	protected Terrain[][] board;
+	protected boolean allEnemiesDown;
 	
 	public Creature(){
 		sneaking = false;
@@ -53,6 +54,7 @@ public class Creature implements Comparable<Creature>{
 		deathSavesNeg = 0;
 		stable = false;
 		dead = false;
+		allEnemiesDown = false;
 		
 	}
 	
@@ -76,8 +78,13 @@ public class Creature implements Comparable<Creature>{
 		if (isProne()){
 			standUp();
 		}
-		if (opponent != null && !opponent.isDown() && opponentIsInRange()){
-			makeAttack();
+		if (opponent != null && !opponent.isDown()){
+			if (opponentIsInRange()){
+				makeAttack();
+			}
+			else if (moveToOpponent()){
+				makeAttack();
+			}
 		}
 		else {
 			if (findOpponent() && moveToOpponent()){
@@ -93,6 +100,10 @@ public class Creature implements Comparable<Creature>{
 	}
 
 	private boolean findOpponent(){
+		if (allEnemiesDown){
+			return false;
+		}
+		
 		int rowU = rowPos - 1;
 		int rowD = rowPos + 1;
 		int colL = colPos - 1;
@@ -126,6 +137,7 @@ public class Creature implements Comparable<Creature>{
 			contR = colR < board[0].length;
 		}
 		
+		allEnemiesDown = true;
 		return false;
 	}
 	
@@ -155,13 +167,13 @@ public class Creature implements Comparable<Creature>{
 	private boolean checkRow(int row, int colL, int colR) {
 		int mid = colPos;
 		Creature curr = board[row][mid].occupant;
-		if (curr != null && faction != curr.getFaction()){
+		if (canFightOther(curr)){
 			opponent = curr;
 			return true;
 		}
 		for (int col = mid - 1; col >= colL; col--){
 			curr = board[row][col].occupant;
-			if(curr != null && faction != curr.getFaction()){
+			if (canFightOther(curr)){
 				opponent = curr;
 				return true;
 			}
@@ -169,7 +181,7 @@ public class Creature implements Comparable<Creature>{
 		for (int col = mid + 1; col <= colR; col++){
 			//System.out.println("Row = " + row + " Col = " + col);
 			curr = board[row][col].occupant;
-			if(curr != null && faction != curr.getFaction()){
+			if (canFightOther(curr)){
 				opponent = curr;
 				return true;
 			}
@@ -183,13 +195,13 @@ public class Creature implements Comparable<Creature>{
 	private boolean checkCol(int col, int rowU, int rowD) {
 		int mid = rowPos;
 		Creature curr = board[mid][col].occupant;
-		if (curr != null && faction != curr.getFaction()){
+		if (canFightOther(curr)){
 			opponent = curr;
 			return true;
 		}
 		for (int row = mid - 1; row >= rowU; row--){
 			curr = board[row][col].occupant;
-			if(curr != null && faction != curr.getFaction()){
+			if (canFightOther(curr)){
 				opponent = curr;
 				return true;
 			}
@@ -197,7 +209,7 @@ public class Creature implements Comparable<Creature>{
 		for (int row = mid + 1; row <= rowD; row++){
 			//System.out.println("Row = " + row + " Col = " + col);
 			curr = board[row][col].occupant;
-			if(curr != null && faction != curr.getFaction()){
+			if (canFightOther(curr)){
 				opponent = curr;
 				return true;
 			}
@@ -205,6 +217,13 @@ public class Creature implements Comparable<Creature>{
 		
 		return false;
 		
+	}
+	
+	public boolean canFightOther(Creature other){
+		if (other != null && faction != other.getFaction() && !other.isDown()){
+			return true;
+		}
+		return false;
 	}
 
 	public boolean getFaction() {
@@ -225,7 +244,7 @@ public class Creature implements Comparable<Creature>{
 	
 	private boolean opponentIsInRange() {
 		int squareRange = range/5;
-		if(Math.abs(rowPos - opponent.getRowPos()) < squareRange && Math.abs(colPos - opponent.getColPos()) < squareRange){
+		if(Math.abs(rowPos - opponent.getRowPos()) <= squareRange && Math.abs(colPos - opponent.getColPos()) <= squareRange){
 			return true;
 		}
 		return false;
@@ -424,11 +443,13 @@ public class Creature implements Comparable<Creature>{
 			stable = true;
 			deathSavesPos = 0;
 			deathSavesNeg = 0;
+			removeFromPlay();
 		}
 		if (deathSavesNeg == 3){
 			dead = true;
 			deathSavesPos = 0;
 			deathSavesNeg = 0;
+			removeFromPlay();
 		}
 		
 	}
@@ -441,7 +462,7 @@ public class Creature implements Comparable<Creature>{
 	
 	private void takeDamage(int damage){
 		hp -= damage;
-		if (hp < 0){
+		if (hp <= 0){
 			dropProne();
 			goDown();
 		}
@@ -473,8 +494,7 @@ public class Creature implements Comparable<Creature>{
 	
 	private void stayDown(){
 		stable = true;
-		board[rowPos][colPos].occupant = null;
-		board[rowPos][colPos].addBody(this);
+		removeFromPlay();
 	}
 	
 	private void riseUp(){
@@ -491,6 +511,11 @@ public class Creature implements Comparable<Creature>{
 	
 	public boolean isDead(){
 		return dead;
+	}
+	
+	private void removeFromPlay(){
+		board[rowPos][colPos].occupant = null;
+		board[rowPos][colPos].addBody(this);
 	}
 	
 	public void setFaction(boolean fac){
@@ -513,6 +538,7 @@ public class Creature implements Comparable<Creature>{
 	
 	public void runDiagnostic(){
 		System.out.println("Hp = " + hp);
+		System.out.println("Down? " + down);
 		System.out.println("Dead? " + dead);
 		System.out.println("Stable? " + stable);
 		System.out.println("Position = " + rowPos + ", " + colPos);
