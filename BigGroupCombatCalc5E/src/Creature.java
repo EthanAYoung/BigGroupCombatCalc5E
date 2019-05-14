@@ -235,6 +235,9 @@ public class Creature implements Comparable<Creature>{
 			return true;
 		}
 		int[] target = findOpenSpaceInRange();
+		if (target == null){
+			return false;
+		}
 		myPath = getPathTo(rowPos, colPos, target[0], target[1], 0);
 		if (walkPath()){
 			return true;
@@ -381,25 +384,30 @@ public class Creature implements Comparable<Creature>{
 		int moveReqPile = 0;
 		int lastSuccInd = -1;
 		for (int i = 0; i < myPath.getSteps().size(); i++){
+			//System.out.println("Movement Left = " + movementLeft);
 			currRow = myPath.getSteps().get(i)[0];
 			currCol = myPath.getSteps().get(i)[1];
 			curr = board[currRow][currCol];
+			//System.out.println("curr.getMoveReq(): " + curr.getMoveReq());
+			//System.out.println("moveReqPile: " + moveReqPile);
 			if (curr.occupant == null){
 				if (movementLeft >= curr.getMoveReq() + moveReqPile){
+					movementLeft -= (curr.getMoveReq() + moveReqPile);
 					board[rowPos][colPos].occupant = null;
 					rowPos = currRow;
 					colPos = currCol;
 					curr.occupant = this;
 					lastSuccInd = i;
-					movementLeft -= (curr.getMoveReq() + moveReqPile);
 					moveReqPile = 0;
+					//System.out.println("Moved: " + movementLeft);
 				}
 				else {
+					//System.out.println("Stopped");
 					myPath.setStart(lastSuccInd + 1);
 					return false;
 				}
 			}
-			if (curr.occupant != null){
+			else {
 				moveReqPile += curr.getMoveReq();
 			}
 		}

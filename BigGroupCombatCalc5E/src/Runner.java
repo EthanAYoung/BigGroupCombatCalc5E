@@ -11,7 +11,7 @@ public class Runner {
 	private static Creature man2;
 	
 	public static void main(String[] args) {
-		grid = populateGridTest();
+		grid = populateGridTest2();
 		Queue<Creature> order = getIntOrder();
 		
 		Creature curr;
@@ -51,7 +51,7 @@ public class Runner {
 			}
 		}
 			
-		Infantry Jorn = new Infantry();
+		Spearman Jorn = new Spearman();
 		grid[19][10].occupant = Jorn;
 		Jorn.setFaction(true);
 		modFacNum(true, 1);
@@ -68,6 +68,48 @@ public class Runner {
 		man2 = Bjorn;
 		
 		return grid;
+	}
+	
+	private static Terrain[][] populateGridTest2() {
+		grid = new Terrain[20][20];
+		for (int row = 0; row < grid.length; row++){
+			for (int col = 0; col < grid[0].length; col++){
+				grid[row][col] = new Terrain();
+			}
+		}
+		
+		Infantry inf;
+		Spearman spe;
+		for (int col = 0; col < 20; col++){
+			inf = new Infantry();
+			setUpCreature(inf, 17, col, true);
+			spe = new Spearman();
+			setUpCreature(spe, 18, col, true);
+			
+			inf = new Infantry();
+			setUpCreature(inf, 1, col, false);
+			inf = new Infantry();
+			setUpCreature(inf, 2, col, false);
+		}
+		
+
+		Spearman Jorn = new Spearman();
+		setUpCreature(Jorn, 19, 10, true);
+		Infantry Bjorn = new Infantry();
+		setUpCreature(Bjorn, 0, 10, false);
+		
+		man1 = Jorn;
+		man2 = Bjorn;
+		
+		return grid;
+	}
+	
+	private static void setUpCreature(Creature c, int row, int col, boolean fac){
+		grid[row][col].occupant = c;
+		c.setFaction(fac);
+		modFacNum(fac, 1);
+		c.setBoard(grid);
+		c.setPos(row, col);
 	}
 	
 	public Terrain[][] getGrid(){
@@ -120,9 +162,6 @@ public class Runner {
 		int stableFacF = 0;
 		for (int row = 0; row < grid.length; row++){
 			for (int col = 0; col < grid[0].length; col++){
-				if (grid[row][col].getBodies().size() != 0){
-					System.out.println(grid[row][col].getBodies().size());
-				}
 				for (int i = 0; i < grid[row][col].getBodies().size(); i++){
 					if (grid[row][col].getBodies().get(i).isDead()){
 						if (grid[row][col].getBodies().get(i).getFaction()){
