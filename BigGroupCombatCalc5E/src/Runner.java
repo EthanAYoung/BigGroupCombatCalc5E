@@ -11,7 +11,8 @@ public class Runner {
 	private static int numOfFacF;
 	private static Creature man1;
 	private static Creature man2;
-	static Queue<Creature> order;
+	private static Queue<Creature> order;
+	private static ButtonGrid buttonGrid;
 	
 	public static void main(String[] args) {
 		grid = populateGridTest2();
@@ -26,20 +27,32 @@ public class Runner {
 		System.out.println("**********************");
 		System.out.println("Bjorn");
 		man2.runDiagnostic();
-
 	}
 	
 	private static void autoPlay(){
 		Creature curr;
+		int[] beforeLoc;
+		int[] afterLoc;
 		while(numOfFacT > 0 && numOfFacF > 0){
 			curr = order.remove();
+			
+			beforeLoc = curr.getLocation();	
 			curr.takeTurn();
+			afterLoc = curr.getLocation();
+			
 			if (curr.isDefeated()){
 				modFacNum(curr.getFaction(), -1);
+				buttonGrid.setText(afterLoc[0], afterLoc[1], "");
 			}
 			else {
 				order.add(curr);
+				buttonGrid.setText(afterLoc[0], afterLoc[1], curr.name + "(" + curr.faction + ")");
 			}
+			
+			if (grid[beforeLoc[0]][beforeLoc[1]].occupant == null){
+				buttonGrid.setText(beforeLoc[0], beforeLoc[1], "");
+			}
+			
 			System.out.println("**********BEGIN************");
 			System.out.println("Jorn");
 			man1.runDiagnostic();
@@ -101,6 +114,7 @@ public class Runner {
 
 	private static Terrain[][] populateGridTest() {
 		grid = new Terrain[20][20];
+		buttonGrid = new ButtonGrid(grid.length, grid[0].length);
 		for (int row = 0; row < grid.length; row++){
 			for (int col = 0; col < grid[0].length; col++){
 				grid[row][col] = new Terrain();
@@ -108,17 +122,9 @@ public class Runner {
 		}
 			
 		Spearman Jorn = new Spearman();
-		grid[19][10].occupant = Jorn;
-		Jorn.setFaction(true);
-		modFacNum(true, 1);
-		Jorn.setBoard(grid);
-		Jorn.setPos(19, 10);
+		setUpCreature(Jorn, 19, 10, true);
 		Infantry Bjorn = new Infantry();
-		grid[0][10].occupant = Bjorn;
-		Bjorn.setFaction(false);
-		modFacNum(false, 1);
-		Bjorn.setBoard(grid);
-		Bjorn.setPos(0, 10);
+		setUpCreature(Bjorn, 0, 10, false);
 		
 		man1 = Jorn;
 		man2 = Bjorn;
@@ -127,7 +133,8 @@ public class Runner {
 	}
 	
 	private static Terrain[][] populateGridTest2() {
-		grid = new Terrain[20][40];
+		grid = new Terrain[20][20];
+		buttonGrid = new ButtonGrid(grid.length, grid[0].length);
 		for (int row = 0; row < grid.length; row++){
 			for (int col = 0; col < grid[0].length; col++){
 				grid[row][col] = new Terrain();
@@ -166,6 +173,8 @@ public class Runner {
 		modFacNum(fac, 1);
 		c.setBoard(grid);
 		c.setPos(row, col);
+		System.out.println(buttonGrid);
+		buttonGrid.setText(row, col, c.name + "(" + c.faction + ")");
 	}
 	
 	public Terrain[][] getGrid(){

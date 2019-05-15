@@ -581,6 +581,10 @@ public class Creature implements Comparable<Creature>{
 	public boolean isPlayerChar(){
 		return player;
 	}
+	
+	public int[] getLocation(){
+		return new int[]{rowPos, colPos};
+	}
 
 	@Override
 	public int compareTo(Creature arg0) {
