@@ -17,6 +17,8 @@ public class Spearman extends Creature{
 		
 		damageDie = 8;
 		range = 10;
+		
+		name = "Spearman";
 	}
 
 }

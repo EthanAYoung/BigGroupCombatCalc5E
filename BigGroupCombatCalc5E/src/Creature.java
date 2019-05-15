@@ -43,6 +43,11 @@ public class Creature implements Comparable<Creature>{
 	protected Terrain[][] board;
 	protected boolean allEnemiesDown;
 	
+	protected int enemiesDowned;
+	protected String name;
+	
+	protected boolean player;
+	
 	public Creature(){
 		sneaking = false;
 		
@@ -54,8 +59,13 @@ public class Creature implements Comparable<Creature>{
 		deathSavesNeg = 0;
 		stable = false;
 		dead = false;
+		
 		allEnemiesDown = false;
 		
+		enemiesDowned = 0;
+		name = "Creature";
+		
+		player = false;
 	}
 	
 	public Creature(int h, int a, int sp, int str, int dex, int con, int i, int wis, int cha){
@@ -79,15 +89,15 @@ public class Creature implements Comparable<Creature>{
 			standUp();
 		}
 		if (opponent != null && !opponent.isDown()){
-			if (opponentIsInRange()){
+			if (isInRangeOf(opponent)){
 				makeAttack();
 			}
-			else if (moveToOpponent()){
+			else if (moveToAttack(opponent)){
 				makeAttack();
 			}
 		}
 		else {
-			if (findOpponent() && moveToOpponent()){
+			if (findOpponent() && moveToAttack(opponent)){
 				makeAttack();
 			}
 		}
@@ -97,6 +107,9 @@ public class Creature implements Comparable<Creature>{
 		int attackRoll = rollDie(20) + strength + proficiency;
 		int damageRoll = rollDie(damageDie) + strength;
 		opponent.getAttacked(attackRoll, damageRoll);
+		if (opponent.isDown()){
+			enemiesDowned++;
+		}
 	}
 
 	private boolean findOpponent(){
@@ -230,11 +243,11 @@ public class Creature implements Comparable<Creature>{
 		return faction;
 	}
 
-	private boolean moveToOpponent() {
-		if(opponentIsInRange()){
+	private boolean moveToAttack(Creature other) {
+		if(isInRangeOf(other)){
 			return true;
 		}
-		int[] target = findOpenSpaceInRange();
+		int[] target = findOpenSpaceInRangeOf(other);
 		if (target == null){
 			return false;
 		}
@@ -245,21 +258,21 @@ public class Creature implements Comparable<Creature>{
 		return false;
 	}
 	
-	private boolean opponentIsInRange() {
+	private boolean isInRangeOf(Creature other) {
 		int squareRange = range/5;
-		if(Math.abs(rowPos - opponent.getRowPos()) <= squareRange && Math.abs(colPos - opponent.getColPos()) <= squareRange){
+		if(Math.abs(rowPos - other.getRowPos()) <= squareRange && Math.abs(colPos - other.getColPos()) <= squareRange){
 			return true;
 		}
 		return false;
 	}
 	
-	private int[] findOpenSpaceInRange(){
+	private int[] findOpenSpaceInRangeOf(Creature other){
 		int squareRange = range/5;
 		ArrayList<int[]> openSpaces = new ArrayList<int[]>();
-		int left = putOnGridLower(opponent.getColPos() - squareRange);
-		int right = putOnGridHigher(opponent.getColPos() + squareRange, board[0].length);
-		int up = putOnGridLower(opponent.getRowPos() - squareRange);
-		int down = putOnGridHigher(opponent.getRowPos() + squareRange, board.length);
+		int left = putOnGridLower(other.getColPos() - squareRange);
+		int right = putOnGridHigher(other.getColPos() + squareRange, board[0].length);
+		int up = putOnGridLower(other.getRowPos() - squareRange);
+		int down = putOnGridHigher(other.getRowPos() + squareRange, board.length);
 		
 		for(int col = left; col <= right; col++){
 			if(board[up][col].occupant == null){
@@ -534,6 +547,14 @@ public class Creature implements Comparable<Creature>{
 		initiative = rollDie(20) + dexterity;
 		return initiative;
 	}
+
+	public String getName() {
+		return name;
+	}
+	
+	public void setName(String n){
+		name = n;
+	}
 	
 	public void setBoard(Terrain[][] g){
 		board = g;
@@ -550,6 +571,15 @@ public class Creature implements Comparable<Creature>{
 		System.out.println("Dead? " + dead);
 		System.out.println("Stable? " + stable);
 		System.out.println("Position = " + rowPos + ", " + colPos);
+		System.out.println("Enemies Felled = " + enemiesDowned);
+	}
+	
+	public void setAsPlayerChar(){
+		player = true;
+	}
+	
+	public boolean isPlayerChar(){
+		return player;
 	}
 
 	@Override

@@ -1,6 +1,8 @@
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.PriorityQueue;
 import java.util.Queue;
+import java.util.Scanner;
 
 public class Runner {
 
@@ -9,11 +11,25 @@ public class Runner {
 	private static int numOfFacF;
 	private static Creature man1;
 	private static Creature man2;
+	static Queue<Creature> order;
 	
 	public static void main(String[] args) {
 		grid = populateGridTest2();
-		Queue<Creature> order = getIntOrder();
+		order = getIntOrder();
 		
+		autoPlay();
+		
+		getCasualtyReport();
+		System.out.println("**********************");
+		System.out.println("Jorn");
+		man1.runDiagnostic();
+		System.out.println("**********************");
+		System.out.println("Bjorn");
+		man2.runDiagnostic();
+
+	}
+	
+	private static void autoPlay(){
 		Creature curr;
 		while(numOfFacT > 0 && numOfFacF > 0){
 			curr = order.remove();
@@ -32,15 +48,55 @@ public class Runner {
 			man2.runDiagnostic();
 			System.out.println("**********END************");
 		}
-		
-		getCasualtyReport();
-		System.out.println("**********************");
-		System.out.println("Jorn");
-		man1.runDiagnostic();
-		System.out.println("**********************");
-		System.out.println("Bjorn");
-		man2.runDiagnostic();
+	}
+	
+	private static void playerPlay(){
+		man1.setAsPlayerChar();
+		Creature curr;
+		Scanner in = new Scanner(System.in);
+		String input;
+		while(numOfFacT > 0 && numOfFacF > 0){
+			curr = order.remove();
+			if (curr.isPlayerChar()){
+				ArrayList<Creature> enemies = getAllEnemies(curr.getFaction());
+				System.out.println("Enemy Combatants");
+				for (int i = 0; i < enemies.size(); i++){
+					System.out.println(i + ": " + enemies.get(i).getName());
+					System.out.println("Enter the Enemy Combatants number");
+					input = in.nextLine();
+					curr.opponent = enemies.get(Integer.parseInt(input));
+					curr.takeTurn();
+				}
+			}
+			else {
+				curr.takeTurn();
+			}
+			if (curr.isDefeated()){
+				modFacNum(curr.getFaction(), -1);
+			}
+			else {
+				order.add(curr);
+			}
+			System.out.println("**********BEGIN************");
+			System.out.println("Jorn");
+			man1.runDiagnostic();
+			System.out.println("**********************");
+			System.out.println("Bjorn");
+			man2.runDiagnostic();
+			System.out.println("**********END************");
+		}
+	}
 
+	private static ArrayList<Creature> getAllEnemies(boolean faction) {
+		ArrayList<Creature> enemies = new ArrayList<Creature>();
+		for (int row = 0; row < grid.length; row++){
+			for (int col = 0; col < grid[0].length; col++){
+				if (grid[row][col].occupant != null && grid[row][col].occupant.getFaction() != faction){
+					enemies.add(grid[row][col].occupant);
+				}
+			}
+		}
+		return enemies;
 	}
 
 	private static Terrain[][] populateGridTest() {
@@ -71,7 +127,7 @@ public class Runner {
 	}
 	
 	private static Terrain[][] populateGridTest2() {
-		grid = new Terrain[20][20];
+		grid = new Terrain[20][40];
 		for (int row = 0; row < grid.length; row++){
 			for (int col = 0; col < grid[0].length; col++){
 				grid[row][col] = new Terrain();

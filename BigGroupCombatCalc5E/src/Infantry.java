@@ -17,6 +17,8 @@ public class Infantry extends Creature{
 		
 		damageDie = 8;
 		range = 5;
+		
+		name = "Infantry";
 	}
 
 }
