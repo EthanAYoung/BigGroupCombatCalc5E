@@ -14,11 +14,13 @@ public class Spearman extends Creature{
 		charisma = 0;
 		pasPerception = 9;
 		proficiency = 2;
+		hpMax = hp;
 		
 		damageDie = 8;
 		range = 10;
 		
 		name = "Spearman";
+		abbreviation = "SP";
 	}
 
 }

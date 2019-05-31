@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.PriorityQueue;
 import java.util.Queue;
@@ -18,7 +19,8 @@ public class Runner {
 		grid = populateGridTest2();
 		order = getIntOrder();
 		
-		autoPlay();
+		playerPlay();
+		//autoPlay();
 		
 		getCasualtyReport();
 		System.out.println("**********************");
@@ -46,7 +48,7 @@ public class Runner {
 			}
 			else {
 				order.add(curr);
-				buttonGrid.setText(afterLoc[0], afterLoc[1], curr.name + "(" + curr.faction + ")");
+				updateCreatureText(curr);
 			}
 			
 			if (grid[beforeLoc[0]][beforeLoc[1]].occupant == null){
@@ -66,30 +68,41 @@ public class Runner {
 	private static void playerPlay(){
 		man1.setAsPlayerChar();
 		Creature curr;
-		Scanner in = new Scanner(System.in);
-		String input;
+		int[] beforeLoc;
+		int[] afterLoc;
 		while(numOfFacT > 0 && numOfFacF > 0){
 			curr = order.remove();
+			//System.out.println("Before: " + beforeLoc[0] + ", " + beforeLoc[1]);
+			
+			if (curr.isDown()){
+				updateCreatureText(curr);
+			}
+			
 			if (curr.isPlayerChar()){
-				ArrayList<Creature> enemies = getAllEnemies(curr.getFaction());
-				System.out.println("Enemy Combatants");
-				for (int i = 0; i < enemies.size(); i++){
-					System.out.println(i + ": " + enemies.get(i).getName());
-					System.out.println("Enter the Enemy Combatants number");
-					input = in.nextLine();
-					curr.opponent = enemies.get(Integer.parseInt(input));
-					curr.takeTurn();
-				}
+				beforeLoc = takePlayerTurn(curr);
 			}
 			else {
+				beforeLoc = curr.getLocation();
 				curr.takeTurn();
 			}
+			afterLoc = curr.getLocation();
+			//System.out.println("After: " + afterLoc[0] + ", " + afterLoc[1]);
+			
 			if (curr.isDefeated()){
-				modFacNum(curr.getFaction(), -1);
+				removeCreature(curr);
 			}
 			else {
 				order.add(curr);
+				updateCreatureText(curr);
 			}
+			
+			if (grid[beforeLoc[0]][beforeLoc[1]].occupant == null){
+				buttonGrid.setText(beforeLoc, "");
+			}
+			
+			updateDownStatus(curr.opponent);
+			
+			/*
 			System.out.println("**********BEGIN************");
 			System.out.println("Jorn");
 			man1.runDiagnostic();
@@ -97,7 +110,114 @@ public class Runner {
 			System.out.println("Bjorn");
 			man2.runDiagnostic();
 			System.out.println("**********END************");
+			*/
 		}
+	}
+
+	private static int[] takePlayerTurn(Creature player){
+		int[] beforeLoc = player.getLocation();
+		if (player.startTurn()) {
+			Scanner in = new Scanner(System.in);
+			String input;
+			boolean repeat;
+			int commaInd;
+			int row;
+			int col;
+			
+			if (player.isProne()){
+				System.out.println("You are prone. Would you like to stand up? (yes/no)");
+				input = in.nextLine();
+				if (input.toLowerCase().startsWith("y")){
+					player.standUp();
+				}
+			}
+			
+			System.out.println("Your location is: " + player.getLocation()[0] + ", " + player.getLocation()[1]);
+			
+			int[] coord;
+			
+			do {
+				System.out.println("Where do you want to go? Enter square coordinates in the form of row,col");
+				/*input = in.nextLine();
+				commaInd = input.indexOf(',');
+				row = Integer.parseInt(input.substring(0, commaInd));
+				col = Integer.parseInt(input.substring(commaInd+1));
+				System.out.println(row);
+				System.out.println(col);*/
+				
+				coord = buttonGrid.getPressed();
+				row = coord[0];
+				col = coord[1];
+				
+				if (grid[row][col].occupant != null && !isSameLocAs(row, col, player.getLocation())){
+					repeat = true;
+					System.out.println("Please enter a valid empty square");
+				}
+				else {
+					repeat = false;
+				}
+				
+			} while (repeat);
+			
+			System.out.println(player.moveTo(row, col));
+			
+			updateCreatureText(player);
+			
+			if (grid[beforeLoc[0]][beforeLoc[1]].occupant == null){
+				buttonGrid.setText(beforeLoc, "");
+			}
+			
+			
+			/*ArrayList<Creature> enemies = player.getEnemiesInRange();
+			if (!enemies.isEmpty()){
+				System.out.println("Enemy Combatants you can attack:");
+				for (int i = 0; i < enemies.size(); i++){
+					System.out.println(i + " : " + enemies.get(i).getName() + " (" + enemies.get(i).getLocation()[0] + "," + enemies.get(i).getLocation()[1] + ")");
+				}
+				System.out.println("Enter the enemy combatant's number: ");
+				input = in.nextLine();
+				player.opponent = enemies.get(Integer.parseInt(input));
+				player.makeAttack();
+			}*/
+			
+			ArrayList<Creature> enemies = player.getEnemiesInRange();
+			for (int i = 0; i < enemies.size(); i ++){
+				System.out.println(Arrays.toString(enemies.get(i).getLocation()));
+			}
+			
+			if (!player.getEnemiesInRange().isEmpty()){
+				do {
+					System.out.println("Click on an enemy in range to attack");
+					
+					coord = buttonGrid.getPressed();
+					row = coord[0];
+					col = coord[1];
+					
+					if (grid[row][col].occupant != null)
+						System.out.println(grid[row][col].occupant.name);
+					else
+						System.out.println("null");
+					
+					if (player.canFightOther(grid[row][col].occupant) && player.isInRangeOf(grid[row][col].occupant)){
+						repeat = false;
+						player.opponent = grid[row][col].occupant;
+						player.makeAttack();
+						updateDownStatus(player.opponent);
+					}
+					else {
+						repeat = true;
+						System.out.println("Please enter a valid empty square");
+					}
+					
+				} while (repeat);
+			}
+		}
+		
+		return beforeLoc;
+	}
+	
+	private static boolean isSameLocAs(int row, int col, int[] loc){
+		return row == loc[0] && col == loc[1];
 	}
 
 	private static ArrayList<Creature> getAllEnemies(boolean faction) {
@@ -110,6 +230,34 @@ public class Runner {
 			}
 		}
 		return enemies;
+	}
+	
+	private static void updateCreatureText(Creature creature){
+		String fac;
+		if (creature.getFaction()){
+			fac = "T";
+		}
+		else {
+			fac = "F";
+		}
+		if(creature.isDown()){
+			buttonGrid.setText(creature.getLocation(), creature.getAbbreviation() + "\n(" + fac + ")\nDown");
+		}
+		else {
+			buttonGrid.setText(creature.getLocation(), creature.getAbbreviation() + "\n (" + fac + ")");
+		}
+	}
+	
+	private static void updateDownStatus(Creature creature) {
+		if (creature != null && creature.isDown()){
+			updateCreatureText(creature);
+		}
+		
+	}
+	
+	private static void removeCreature(Creature creature){
+		buttonGrid.setText(creature.getLocation(), "");
+		modFacNum(creature.getFaction(), -1);
 	}
 
 	private static Terrain[][] populateGridTest() {
@@ -157,8 +305,12 @@ public class Runner {
 		
 
 		Spearman Jorn = new Spearman();
+		Jorn.setName("Jorn");
+		Jorn.setAbbreviation("Jorn");
 		setUpCreature(Jorn, 19, 10, true);
 		Infantry Bjorn = new Infantry();
+		Bjorn.setName("Bjorn");
+		Bjorn.setAbbreviation("Bjorn");
 		setUpCreature(Bjorn, 0, 10, false);
 		
 		man1 = Jorn;
@@ -173,8 +325,7 @@ public class Runner {
 		modFacNum(fac, 1);
 		c.setBoard(grid);
 		c.setPos(row, col);
-		System.out.println(buttonGrid);
-		buttonGrid.setText(row, col, c.name + "(" + c.faction + ")");
+		updateCreatureText(c);
 	}
 	
 	public Terrain[][] getGrid(){

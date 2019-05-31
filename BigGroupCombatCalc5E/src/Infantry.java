@@ -14,11 +14,13 @@ public class Infantry extends Creature{
 		charisma = -1;
 		pasPerception = 10;
 		proficiency = 2;
+		hpMax = hp;
 		
 		damageDie = 8;
 		range = 5;
 		
 		name = "Infantry";
+		abbreviation = "IN";
 	}
 
 }

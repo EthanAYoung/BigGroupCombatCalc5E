@@ -13,7 +13,6 @@ public class Terrain {
 	
 	public void addBody(Creature body){
 		bodies.add(body);
-		moveReq += 5;
 	}
 	
 	public ArrayList<Creature> getBodies(){
